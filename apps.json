@@ -7,7 +7,7 @@
     "author": "Continuwuity Team", 
     "source": "https://github.com/girlbossceo/conduwuit",
     "website": "https://continuwuity.org/",
-    "categories": ["communication", "social"],
+    "categories": ["social", "network"],
     "version": "0.5.0-rc.7",
     "tipi_version": 1,
     "available": true,
