@@ -1,0 +1,68 @@
+{
+  "name": "Continuwuity",
+  "id": "continuwuity",
+  "available": true,
+  "port": 6167,
+  "description": "A fast Matrix homeserver with enhanced presence support, video calling via LiveKit, and TURN server integration.",
+  "version": "0.5.0-rc.7",
+  "tipi_version": 1,
+  "short_desc": "Enhanced Matrix homeserver with full presence and video calling support",
+  "author": "Continuwuity Team",
+  "source": "https://github.com/girlbossceo/conduwuit",
+  "website": "https://continuwuity.org/",
+  "categories": ["communication", "social"],
+  "url_suffix": "",
+  "form_fields": [
+    {
+      "type": "text",
+      "label": "Server Domain",
+      "max": 50,
+      "min": 3,
+      "required": true,
+      "env_variable": "APP_DOMAIN",
+      "hint": "The domain name for your Matrix server (e.g., matrix.example.com)"
+    },
+    {
+      "type": "boolean",
+      "label": "Allow Registration",
+      "required": false,
+      "env_variable": "ALLOW_REGISTRATION",
+      "hint": "Allow new users to register accounts"
+    },
+    {
+      "type": "boolean",
+      "label": "Enable Federation",
+      "required": false,
+      "env_variable": "ALLOW_FEDERATION",
+      "hint": "Enable federation with other Matrix servers"
+    },
+    {
+      "type": "text",
+      "label": "External IP",
+      "max": 50,
+      "min": 7,
+      "required": false,
+      "env_variable": "EXTERNAL_IP",
+      "hint": "Your server's public IP address for TURN server (auto-detected if blank)"
+    },
+    {
+      "type": "text",
+      "label": "Tailscale Auth Key",
+      "max": 200,
+      "min": 10,
+      "required": false,
+      "env_variable": "TAILSCALE_AUTH_KEY",
+      "hint": "Tailscale auth key for secure mesh network access (optional)"
+    },
+    {
+      "type": "text",
+      "label": "Tailscale Hostname",
+      "max": 50,
+      "min": 3,
+      "required": false,
+      "env_variable": "TAILSCALE_HOSTNAME",
+      "hint": "Hostname for Tailscale device (default: continuwuity-ts)"
+    }
+  ],
+  "supported_architectures": ["arm64", "amd64"]
+}

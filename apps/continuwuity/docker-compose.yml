@@ -1,0 +1,199 @@
+services:
+  continuwuity:
+    image: registry.gitlab.com/continuwuity/continuwuity:latest
+    restart: unless-stopped
+    networks:
+      tipi_main_network:
+    environment:
+      CONDUIT_SERVER_NAME: ${APP_DOMAIN}
+      CONDUIT_DATABASE_PATH: /var/lib/matrix-conduit/
+      CONDUIT_DATABASE_BACKEND: rocksdb
+      CONDUIT_ADDRESS: 0.0.0.0
+      CONDUIT_PORT: "6167"
+      CONDUIT_LOG: info
+      CONDUIT_MAX_REQUEST_SIZE: ${MAX_REQUEST_SIZE:-20000000}
+      CONDUIT_ALLOW_REGISTRATION: ${ALLOW_REGISTRATION:-false}
+      CONDUIT_ALLOW_FEDERATION: ${ALLOW_FEDERATION:-true}
+      CONDUIT_TRUSTED_SERVERS: ${TRUSTED_SERVERS:-[]}
+      CONDUIT_ALLOW_CHECK_FOR_UPDATES: "false"
+      # Enhanced presence configuration (Continuwuity's advanced features)
+      CONDUIT_ALLOW_LOCAL_PRESENCE: "true"
+      CONDUIT_ALLOW_INCOMING_PRESENCE: "true"
+      CONDUIT_ALLOW_OUTGOING_PRESENCE: "true"
+      CONDUIT_CONFIG: ""
+      # TURN server configuration
+      CONDUIT_TURN_URIS: '[\"turn:${APP_DOMAIN}:3478?transport=udp\", \"turn:${APP_DOMAIN}:3478?transport=tcp\", \"turns:${APP_DOMAIN}:5349?transport=tcp\"]'
+      CONDUIT_TURN_SECRET: "${TURN_SECRET}"
+      CONDUIT_TURN_USERNAME: ""
+      CONDUIT_TURN_TTL: "86400"
+    volumes:
+      - ${APP_DATA_DIR}/data:/var/lib/matrix-conduit/
+    depends_on:
+      - coturn
+    labels:
+      runtipi.managed: true
+      traefik.enable: "true"
+      traefik.http.middlewares.${APP_ID}-continuwuity-web-redirect.redirectscheme.scheme: https
+      traefik.http.services.${APP_ID}-continuwuity.loadbalancer.server.port: "6167"
+      traefik.http.routers.${APP_ID}-continuwuity-insecure.rule: Host(`${APP_DOMAIN}`)
+      traefik.http.routers.${APP_ID}-continuwuity-insecure.entrypoints: web
+      traefik.http.routers.${APP_ID}-continuwuity-insecure.service: ${APP_ID}-continuwuity
+      traefik.http.routers.${APP_ID}-continuwuity-insecure.priority: 50
+      traefik.http.routers.${APP_ID}-continuwuity.rule: Host(`${APP_DOMAIN}`)
+      traefik.http.routers.${APP_ID}-continuwuity.entrypoints: websecure
+      traefik.http.routers.${APP_ID}-continuwuity.service: ${APP_ID}-continuwuity
+      traefik.http.routers.${APP_ID}-continuwuity.tls.certresolver: myresolver
+      traefik.http.routers.${APP_ID}-continuwuity.priority: 50
+      traefik.http.routers.${APP_ID}-continuwuity-local-insecure.rule: Host(`${APP_ID}.${LOCAL_DOMAIN}`)
+      traefik.http.routers.${APP_ID}-continuwuity-local-insecure.entrypoints: web
+      traefik.http.routers.${APP_ID}-continuwuity-local-insecure.service: ${APP_ID}-continuwuity
+      traefik.http.routers.${APP_ID}-continuwuity-local-insecure.middlewares: ${APP_ID}-continuwuity-web-redirect@docker
+      traefik.http.routers.${APP_ID}-continuwuity-local.rule: Host(`${APP_ID}.${LOCAL_DOMAIN}`)
+      traefik.http.routers.${APP_ID}-continuwuity-local.entrypoints: websecure
+      traefik.http.routers.${APP_ID}-continuwuity-local.service: ${APP_ID}-continuwuity
+      traefik.http.routers.${APP_ID}-continuwuity-local.tls: "true"
+
+  continuwuity-well-known:
+    image: nginx
+    restart: unless-stopped
+    networks:
+      tipi_main_network:
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN}
+    volumes:
+      - ./nginx:/etc/nginx/templates
+    labels:
+      runtipi.managed: true
+      traefik.enable: "true"
+      traefik.http.middlewares.${APP_ID}-well-known-web-redirect.redirectscheme.scheme: https
+      traefik.http.services.${APP_ID}-well-known.loadbalancer.server.port: "80"
+      traefik.http.routers.${APP_ID}-well-known-insecure.rule: Host(`${APP_DOMAIN}`) && PathPrefix(`/.well-known/matrix/`)
+      traefik.http.routers.${APP_ID}-well-known-insecure.entrypoints: web
+      traefik.http.routers.${APP_ID}-well-known-insecure.service: ${APP_ID}-well-known
+      traefik.http.routers.${APP_ID}-well-known-insecure.priority: 100
+      traefik.http.routers.${APP_ID}-well-known.rule: Host(`${APP_DOMAIN}`) && PathPrefix(`/.well-known/matrix/`)
+      traefik.http.routers.${APP_ID}-well-known.entrypoints: websecure
+      traefik.http.routers.${APP_ID}-well-known.service: ${APP_ID}-well-known
+      traefik.http.routers.${APP_ID}-well-known.tls.certresolver: myresolver
+      traefik.http.routers.${APP_ID}-well-known.priority: 100
+      traefik.http.routers.${APP_ID}-well-known-local-insecure.rule: Host(`${APP_ID}.${LOCAL_DOMAIN}`) && PathPrefix(`/.well-known/matrix/`)
+      traefik.http.routers.${APP_ID}-well-known-local-insecure.entrypoints: web
+      traefik.http.routers.${APP_ID}-well-known-local-insecure.service: ${APP_ID}-well-known
+      traefik.http.routers.${APP_ID}-well-known-local-insecure.middlewares: ${APP_ID}-well-known-web-redirect@docker
+      traefik.http.routers.${APP_ID}-well-known-local.rule: Host(`${APP_ID}.${LOCAL_DOMAIN}`) && PathPrefix(`/.well-known/matrix/`)
+      traefik.http.routers.${APP_ID}-well-known-local.entrypoints: websecure
+      traefik.http.routers.${APP_ID}-well-known-local.service: ${APP_ID}-well-known
+      traefik.http.routers.${APP_ID}-well-known-local.tls: "true"
+
+  # LiveKit server for Element Call video conferencing
+  livekit:
+    image: livekit/livekit-server:v1.7.2
+    restart: unless-stopped
+    networks:
+      tipi_main_network:
+    ports:
+      - "7880:7880/tcp"
+      - "7881:7881/tcp"
+      - "7882:7882/udp"
+      - "50000-50200:50000-50200/udp"
+    environment:
+      LIVEKIT_CONFIG: /etc/livekit.yaml
+    volumes:
+      - ./livekit.yaml:/etc/livekit.yaml:ro
+    labels:
+      runtipi.managed: true
+      traefik.enable: "true"
+      traefik.http.middlewares.${APP_ID}-livekit-stripprefix.stripprefix.prefixes: /livekit
+      traefik.http.services.${APP_ID}-livekit.loadbalancer.server.port: "7880"
+      traefik.http.routers.${APP_ID}-livekit-insecure.rule: Host(`${APP_DOMAIN}`) && PathPrefix(`/livekit`)
+      traefik.http.routers.${APP_ID}-livekit-insecure.entrypoints: web
+      traefik.http.routers.${APP_ID}-livekit-insecure.service: ${APP_ID}-livekit
+      traefik.http.routers.${APP_ID}-livekit-insecure.middlewares: ${APP_ID}-livekit-stripprefix@docker
+      traefik.http.routers.${APP_ID}-livekit-insecure.priority: 75
+      traefik.http.routers.${APP_ID}-livekit.rule: Host(`${APP_DOMAIN}`) && PathPrefix(`/livekit`)
+      traefik.http.routers.${APP_ID}-livekit.entrypoints: websecure
+      traefik.http.routers.${APP_ID}-livekit.service: ${APP_ID}-livekit
+      traefik.http.routers.${APP_ID}-livekit.tls.certresolver: myresolver
+      traefik.http.routers.${APP_ID}-livekit.middlewares: ${APP_ID}-livekit-stripprefix@docker
+      traefik.http.routers.${APP_ID}-livekit.priority: 75
+
+  # LiveKit JWT service for Element Call authentication
+  livekit-jwt:
+    image: ghcr.io/element-hq/lk-jwt-service:latest
+    restart: unless-stopped
+    networks:
+      tipi_main_network:
+    environment:
+      - LIVEKIT_URL=wss://${APP_DOMAIN}/livekit
+      - LIVEKIT_KEY=${LIVEKIT_API_KEY}
+      - LIVEKIT_SECRET=${LIVEKIT_API_SECRET}
+    labels:
+      runtipi.managed: true
+      traefik.enable: "true"
+      traefik.http.middlewares.${APP_ID}-livekit-jwt-stripprefix.stripprefix.prefixes: /livekit-jwt
+      traefik.http.services.${APP_ID}-livekit-jwt.loadbalancer.server.port: "8080"
+      traefik.http.routers.${APP_ID}-livekit-jwt-insecure.rule: Host(`${APP_DOMAIN}`) && PathPrefix(`/livekit-jwt`)
+      traefik.http.routers.${APP_ID}-livekit-jwt-insecure.entrypoints: web
+      traefik.http.routers.${APP_ID}-livekit-jwt-insecure.service: ${APP_ID}-livekit-jwt
+      traefik.http.routers.${APP_ID}-livekit-jwt-insecure.middlewares: ${APP_ID}-livekit-jwt-stripprefix@docker
+      traefik.http.routers.${APP_ID}-livekit-jwt-insecure.priority: 75
+      traefik.http.routers.${APP_ID}-livekit-jwt.rule: Host(`${APP_DOMAIN}`) && PathPrefix(`/livekit-jwt`)
+      traefik.http.routers.${APP_ID}-livekit-jwt.entrypoints: websecure
+      traefik.http.routers.${APP_ID}-livekit-jwt.service: ${APP_ID}-livekit-jwt
+      traefik.http.routers.${APP_ID}-livekit-jwt.tls.certresolver: myresolver
+      traefik.http.routers.${APP_ID}-livekit-jwt.middlewares: ${APP_ID}-livekit-jwt-stripprefix@docker
+      traefik.http.routers.${APP_ID}-livekit-jwt.priority: 75
+
+  # Coturn TURN server for WebRTC relay
+  coturn:
+    image: coturn/coturn:4.6.2-r8
+    restart: unless-stopped
+    networks:
+      tipi_main_network:
+    ports:
+      - "3478:3478/tcp"
+      - "3478:3478/udp"
+      - "5349:5349/tcp"
+      - "5349:5349/udp"
+      - "49160-49200:49160-49200/udp"
+    volumes:
+      - ./coturn.conf:/etc/coturn/turnserver.conf:ro
+    environment:
+      TURN_SECRET: ${TURN_SECRET}
+      APP_DOMAIN: ${APP_DOMAIN}
+      EXTERNAL_IP: ${EXTERNAL_IP}
+    healthcheck:
+      test: ["CMD", "turnutils_uclient", "-t", "5", "-T", "-u", "test", "-w", "test", "127.0.0.1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    labels:
+      runtipi.managed: true
+
+  # Tailscale integration (optional)
+  tailscale-continuwuity:
+    image: lscr.io/linuxserver/tailscale:latest
+    hostname: ${TAILSCALE_HOSTNAME:-continuwuity-ts}
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - TAILSCALE_AUTH_KEY=${TAILSCALE_AUTH_KEY}
+      - TAILSCALE_HOSTNAME=${TAILSCALE_HOSTNAME:-continuwuity-ts}
+    volumes:
+      - ${APP_DATA_DIR}/tailscale-state:/config
+    networks:
+      tipi_main_network:
+    depends_on:
+      - continuwuity
+    profiles:
+      - tailscale
+    labels:
+      runtipi.managed: true
+
+networks:
+  tipi_main_network:
+    external: true

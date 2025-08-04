@@ -1,0 +1,186 @@
+{
+  "$schema": "../dynamic-compose-schema.json",
+  "services": [
+    {
+      "name": "continuwuity",
+      "image": "registry.gitlab.com/continuwuity/continuwuity:latest",
+      "isMain": true,
+      "environment": {
+        "CONDUIT_SERVER_NAME": "${APP_DOMAIN}",
+        "CONDUIT_DATABASE_PATH": "/var/lib/matrix-conduit/",
+        "CONDUIT_DATABASE_BACKEND": "rocksdb",
+        "CONDUIT_ADDRESS": "0.0.0.0",
+        "CONDUIT_PORT": "6167",
+        "CONDUIT_LOG": "info",
+        "CONDUIT_MAX_REQUEST_SIZE": "${MAX_REQUEST_SIZE:-20000000}",
+        "CONDUIT_ALLOW_REGISTRATION": "${ALLOW_REGISTRATION:-false}",
+        "CONDUIT_ALLOW_FEDERATION": "${ALLOW_FEDERATION:-true}",
+        "CONDUIT_TRUSTED_SERVERS": "${TRUSTED_SERVERS:-[]}",
+        "CONDUIT_ALLOW_CHECK_FOR_UPDATES": "false",
+        "CONDUIT_ALLOW_LOCAL_PRESENCE": "true",
+        "CONDUIT_ALLOW_INCOMING_PRESENCE": "true",
+        "CONDUIT_ALLOW_OUTGOING_PRESENCE": "true",
+        "CONDUIT_CONFIG": "",
+        "CONDUIT_TURN_URIS": "[\"turn:${APP_DOMAIN}:3478?transport=udp\", \"turn:${APP_DOMAIN}:3478?transport=tcp\", \"turns:${APP_DOMAIN}:5349?transport=tcp\"]",
+        "CONDUIT_TURN_SECRET": "${TURN_SECRET}",
+        "CONDUIT_TURN_USERNAME": "",
+        "CONDUIT_TURN_TTL": "86400"
+      },
+      "volumes": [
+        {
+          "hostPath": "${APP_DATA_DIR}/data",
+          "containerPath": "/var/lib/matrix-conduit/"
+        }
+      ],
+      "dependsOn": ["coturn"],
+      "extraLabels": {
+        "traefik.enable": "true",
+        "traefik.http.middlewares.{{RUNTIPI_APP_ID}}-continuwuity-web-redirect.redirectscheme.scheme": "https",
+        "traefik.http.services.{{RUNTIPI_APP_ID}}-continuwuity.loadbalancer.server.port": "6167",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-continuwuity-insecure.rule": "Host(`${APP_DOMAIN}`)",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-continuwuity-insecure.entrypoints": "web",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-continuwuity-insecure.service": "{{RUNTIPI_APP_ID}}-continuwuity",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-continuwuity-insecure.priority": "50",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-continuwuity.rule": "Host(`${APP_DOMAIN}`)",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-continuwuity.entrypoints": "websecure",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-continuwuity.service": "{{RUNTIPI_APP_ID}}-continuwuity",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-continuwuity.tls.certresolver": "myresolver",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-continuwuity.priority": "50",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-continuwuity-local-insecure.rule": "Host(`{{RUNTIPI_APP_ID}}.${LOCAL_DOMAIN}`)",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-continuwuity-local-insecure.entrypoints": "web",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-continuwuity-local-insecure.service": "{{RUNTIPI_APP_ID}}-continuwuity",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-continuwuity-local-insecure.middlewares": "{{RUNTIPI_APP_ID}}-continuwuity-web-redirect",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-continuwuity-local.rule": "Host(`{{RUNTIPI_APP_ID}}.${LOCAL_DOMAIN}`)",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-continuwuity-local.entrypoints": "websecure",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-continuwuity-local.service": "{{RUNTIPI_APP_ID}}-continuwuity",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-continuwuity-local.tls": "true"
+      }
+    },
+    {
+      "name": "continuwuity-well-known",
+      "image": "nginx",
+      "environment": {
+        "APP_DOMAIN": "${APP_DOMAIN}"
+      },
+      "volumes": [
+        {
+          "hostPath": "./nginx",
+          "containerPath": "/etc/nginx/templates"
+        }
+      ],
+      "extraLabels": {
+        "traefik.enable": "true",
+        "traefik.http.middlewares.{{RUNTIPI_APP_ID}}-well-known-web-redirect.redirectscheme.scheme": "https",
+        "traefik.http.services.{{RUNTIPI_APP_ID}}-well-known.loadbalancer.server.port": "80",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-well-known-insecure.rule": "Host(`${APP_DOMAIN}`) && PathPrefix(`/.well-known/matrix/`)",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-well-known-insecure.entrypoints": "web",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-well-known-insecure.service": "{{RUNTIPI_APP_ID}}-well-known",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-well-known-insecure.priority": "100",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-well-known.rule": "Host(`${APP_DOMAIN}`) && PathPrefix(`/.well-known/matrix/`)",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-well-known.entrypoints": "websecure",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-well-known.service": "{{RUNTIPI_APP_ID}}-well-known",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-well-known.tls.certresolver": "myresolver",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-well-known.priority": "100",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-well-known-local-insecure.rule": "Host(`{{RUNTIPI_APP_ID}}.${LOCAL_DOMAIN}`) && PathPrefix(`/.well-known/matrix/`)",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-well-known-local-insecure.entrypoints": "web",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-well-known-local-insecure.service": "{{RUNTIPI_APP_ID}}-well-known",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-well-known-local-insecure.middlewares": "{{RUNTIPI_APP_ID}}-well-known-web-redirect",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-well-known-local.rule": "Host(`{{RUNTIPI_APP_ID}}.${LOCAL_DOMAIN}`) && PathPrefix(`/.well-known/matrix/`)",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-well-known-local.entrypoints": "websecure",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-well-known-local.service": "{{RUNTIPI_APP_ID}}-well-known",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-well-known-local.tls": "true"
+      }
+    },
+    {
+      "name": "livekit",
+      "image": "livekit/livekit-server:v1.7.2",
+      "ports": [
+        { "hostPort": 7880, "containerPort": 7880, "protocol": "tcp" },
+        { "hostPort": 7881, "containerPort": 7881, "protocol": "tcp" },
+        { "hostPort": 7882, "containerPort": 7882, "protocol": "udp" },
+        { "hostPort": "50000-50200", "containerPort": "50000-50200", "protocol": "udp" }
+      ],
+      "environment": {
+        "LIVEKIT_CONFIG": "/etc/livekit.yaml"
+      },
+      "volumes": [
+        {
+          "hostPath": "./livekit.yaml",
+          "containerPath": "/etc/livekit.yaml",
+          "readOnly": true
+        }
+      ],
+      "extraLabels": {
+        "traefik.enable": "true",
+        "traefik.http.middlewares.{{RUNTIPI_APP_ID}}-livekit-stripprefix.stripprefix.prefixes": "/livekit",
+        "traefik.http.services.{{RUNTIPI_APP_ID}}-livekit.loadbalancer.server.port": "7880",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-livekit-insecure.rule": "Host(`${APP_DOMAIN}`) && PathPrefix(`/livekit`)",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-livekit-insecure.entrypoints": "web",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-livekit-insecure.service": "{{RUNTIPI_APP_ID}}-livekit",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-livekit-insecure.middlewares": "{{RUNTIPI_APP_ID}}-livekit-stripprefix",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-livekit-insecure.priority": "75",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-livekit.rule": "Host(`${APP_DOMAIN}`) && PathPrefix(`/livekit`)",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-livekit.entrypoints": "websecure",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-livekit.service": "{{RUNTIPI_APP_ID}}-livekit",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-livekit.tls.certresolver": "myresolver",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-livekit.middlewares": "{{RUNTIPI_APP_ID}}-livekit-stripprefix",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-livekit.priority": "75"
+      }
+    },
+    {
+      "name": "livekit-jwt",
+      "image": "ghcr.io/element-hq/lk-jwt-service:latest",
+      "environment": {
+        "LIVEKIT_URL": "wss://${APP_DOMAIN}/livekit",
+        "LIVEKIT_KEY": "${LIVEKIT_API_KEY}",
+        "LIVEKIT_SECRET": "${LIVEKIT_API_SECRET}"
+      },
+      "extraLabels": {
+        "traefik.enable": "true",
+        "traefik.http.middlewares.{{RUNTIPI_APP_ID}}-livekit-jwt-stripprefix.stripprefix.prefixes": "/livekit-jwt",
+        "traefik.http.services.{{RUNTIPI_APP_ID}}-livekit-jwt.loadbalancer.server.port": "8080",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-livekit-jwt-insecure.rule": "Host(`${APP_DOMAIN}`) && PathPrefix(`/livekit-jwt`)",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-livekit-jwt-insecure.entrypoints": "web",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-livekit-jwt-insecure.service": "{{RUNTIPI_APP_ID}}-livekit-jwt",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-livekit-jwt-insecure.middlewares": "{{RUNTIPI_APP_ID}}-livekit-jwt-stripprefix",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-livekit-jwt-insecure.priority": "75",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-livekit-jwt.rule": "Host(`${APP_DOMAIN}`) && PathPrefix(`/livekit-jwt`)",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-livekit-jwt.entrypoints": "websecure",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-livekit-jwt.service": "{{RUNTIPI_APP_ID}}-livekit-jwt",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-livekit-jwt.tls.certresolver": "myresolver",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-livekit-jwt.middlewares": "{{RUNTIPI_APP_ID}}-livekit-jwt-stripprefix",
+        "traefik.http.routers.{{RUNTIPI_APP_ID}}-livekit-jwt.priority": "75"
+      }
+    },
+    {
+      "name": "coturn",
+      "image": "coturn/coturn:4.6.2-r8",
+      "ports": [
+        { "hostPort": 3478, "containerPort": 3478, "protocol": "tcp" },
+        { "hostPort": 3478, "containerPort": 3478, "protocol": "udp" },
+        { "hostPort": 5349, "containerPort": 5349, "protocol": "tcp" },
+        { "hostPort": 5349, "containerPort": 5349, "protocol": "udp" },
+        { "hostPort": "49160-49200", "containerPort": "49160-49200", "protocol": "udp" }
+      ],
+      "volumes": [
+        {
+          "hostPath": "./coturn.conf",
+          "containerPath": "/etc/coturn/turnserver.conf",
+          "readOnly": true
+        }
+      ],
+      "environment": {
+        "TURN_SECRET": "${TURN_SECRET}",
+        "APP_DOMAIN": "${APP_DOMAIN}",
+        "EXTERNAL_IP": "${EXTERNAL_IP}"
+      },
+      "healthCheck": {
+        "test": ["CMD", "turnutils_uclient", "-t", "5", "-T", "-u", "test", "-w", "test", "127.0.0.1"],
+        "interval": "30s",
+        "timeout": "10s",
+        "retries": 3,
+        "startPeriod": "10s"
+      }
+    }
+  ]
+}

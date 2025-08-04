@@ -1,0 +1,18 @@
+{
+  "id": "continuwuity",
+  "name": "Continuwuity",
+  "description": "Enhanced Matrix homeserver with full presence support and video calling",
+  "logo": "https://raw.githubusercontent.com/matrix-org/matrix.org/master/assets/images/matrix-logo.svg",
+  "screenshots": [],
+  "categories": ["communication", "social"],
+  "developer": "Continuwuity Team",
+  "website": "https://continuwuity.org/",
+  "source": "https://github.com/girlbossceo/conduwuit",
+  "license": "Apache-2.0",
+  "requirements": {
+    "ports": [6167, 3478, 5349, 7880, 7881, 7882, "50000-50200"],
+    "volumes": ["data", "tailscale-state"]
+  },
+  "version": "0.5.0-rc.7",
+  "updated_at": "2025-08-04T15:45:00Z"
+}

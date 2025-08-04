@@ -1,0 +1,19 @@
+[
+  {
+    "id": "continuwuity",
+    "name": "Continuwuity",
+    "description": "Enhanced Matrix homeserver with full presence support and video calling",
+    "short_desc": "Enhanced Matrix homeserver with full presence and video calling support",
+    "author": "Continuwuity Team", 
+    "source": "https://github.com/girlbossceo/conduwuit",
+    "website": "https://continuwuity.org/",
+    "categories": ["communication", "social"],
+    "version": "0.5.0-rc.7",
+    "tipi_version": 1,
+    "available": true,
+    "port": 6167,
+    "supported_architectures": ["arm64", "amd64"],
+    "created_at": "2025-08-04T19:45:00Z",
+    "updated_at": "2025-08-04T19:45:00Z"
+  }
+]
