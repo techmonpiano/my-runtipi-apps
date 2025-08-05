@@ -32,7 +32,7 @@ services:
       - coturn
     labels:
       runtipi.managed: true
-      traefik.enable: "true"
+      traefik.enable: ${APP_EXPOSED}
       traefik.http.middlewares.${APP_ID}-continuwuity-web-redirect.redirectscheme.scheme: https
       traefik.http.services.${APP_ID}-continuwuity.loadbalancer.server.port: "6167"
       traefik.http.routers.${APP_ID}-continuwuity-insecure.rule: Host(`${APP_DOMAIN}`)
@@ -64,7 +64,7 @@ services:
       - ./nginx:/etc/nginx/templates
     labels:
       runtipi.managed: true
-      traefik.enable: "true"
+      traefik.enable: ${APP_EXPOSED}
       traefik.http.middlewares.${APP_ID}-well-known-web-redirect.redirectscheme.scheme: https
       traefik.http.services.${APP_ID}-well-known.loadbalancer.server.port: "80"
       traefik.http.routers.${APP_ID}-well-known-insecure.rule: Host(`${APP_DOMAIN}`) && PathPrefix(`/.well-known/matrix/`)
@@ -102,7 +102,7 @@ services:
       - ./livekit.yaml:/etc/livekit.yaml:ro
     labels:
       runtipi.managed: true
-      traefik.enable: "true"
+      traefik.enable: ${APP_EXPOSED}
       traefik.http.middlewares.${APP_ID}-livekit-stripprefix.stripprefix.prefixes: /livekit
       traefik.http.services.${APP_ID}-livekit.loadbalancer.server.port: "7880"
       traefik.http.routers.${APP_ID}-livekit-insecure.rule: Host(`${APP_DOMAIN}`) && PathPrefix(`/livekit`)
@@ -129,7 +129,7 @@ services:
       LIVEKIT_SECRET: ${LIVEKIT_API_SECRET}
     labels:
       runtipi.managed: true
-      traefik.enable: "true"
+      traefik.enable: ${APP_EXPOSED}
       traefik.http.middlewares.${APP_ID}-livekit-jwt-stripprefix.stripprefix.prefixes: /livekit-jwt
       traefik.http.services.${APP_ID}-livekit-jwt.loadbalancer.server.port: "8080"
       traefik.http.routers.${APP_ID}-livekit-jwt-insecure.rule: Host(`${APP_DOMAIN}`) && PathPrefix(`/livekit-jwt`)
