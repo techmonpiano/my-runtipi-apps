@@ -163,7 +163,7 @@ services:
       APP_DOMAIN: ${APP_DOMAIN}
       EXTERNAL_IP: ${EXTERNAL_IP}
     healthcheck:
-      test: ["CMD", "turnutils_uclient", "-t", "5", "-T", "-u", "test", "-w", "test", "127.0.0.1"]
+      test: 'turnutils_uclient -t 5 -T -u test -w test 127.0.0.1 || exit 1'
       interval: 30s
       timeout: 10s
       retries: 3
