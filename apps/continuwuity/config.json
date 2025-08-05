@@ -58,10 +58,28 @@
       "type": "text",
       "label": "Tailscale Hostname",
       "max": 50,
-      "min": 3,
+      "min": 3,  
       "required": false,
       "env_variable": "TAILSCALE_HOSTNAME",
       "hint": "Hostname for Tailscale device (default: continuwuity-ts)"
+    },
+    {
+      "type": "random",
+      "label": "TURN Secret",
+      "env_variable": "TURN_SECRET",
+      "min": 32
+    },
+    {
+      "type": "random",
+      "label": "LiveKit API Key",
+      "env_variable": "LIVEKIT_API_KEY",
+      "min": 16
+    },
+    {
+      "type": "random",
+      "label": "LiveKit API Secret", 
+      "env_variable": "LIVEKIT_API_SECRET",
+      "min": 32
     }
   ],
   "supported_architectures": ["arm64", "amd64"]
