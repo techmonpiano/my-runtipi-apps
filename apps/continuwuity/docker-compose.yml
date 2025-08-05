@@ -38,12 +38,12 @@ services:
       traefik.http.routers.${APP_ID}-continuwuity-insecure.rule: Host(`${APP_DOMAIN}`)
       traefik.http.routers.${APP_ID}-continuwuity-insecure.entrypoints: web
       traefik.http.routers.${APP_ID}-continuwuity-insecure.service: ${APP_ID}-continuwuity
-      traefik.http.routers.${APP_ID}-continuwuity-insecure.priority: 50
+      traefik.http.routers.${APP_ID}-continuwuity-insecure.priority: 100
       traefik.http.routers.${APP_ID}-continuwuity.rule: Host(`${APP_DOMAIN}`)
       traefik.http.routers.${APP_ID}-continuwuity.entrypoints: websecure
       traefik.http.routers.${APP_ID}-continuwuity.service: ${APP_ID}-continuwuity
       traefik.http.routers.${APP_ID}-continuwuity.tls.certresolver: myresolver
-      traefik.http.routers.${APP_ID}-continuwuity.priority: 50
+      traefik.http.routers.${APP_ID}-continuwuity.priority: 100
       traefik.http.routers.${APP_ID}-continuwuity-local-insecure.rule: Host(`${APP_ID}.${LOCAL_DOMAIN}`)
       traefik.http.routers.${APP_ID}-continuwuity-local-insecure.entrypoints: web
       traefik.http.routers.${APP_ID}-continuwuity-local-insecure.service: ${APP_ID}-continuwuity
