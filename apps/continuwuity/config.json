@@ -13,6 +13,7 @@
   "website": "https://continuwuity.org/",
   "categories": ["social", "network"],
   "url_suffix": "",
+  "dynamic_config": true,
   "form_fields": [
     {
       "type": "text",
@@ -83,5 +84,7 @@
       "min": 32
     }
   ],
-  "supported_architectures": ["arm64", "amd64"]
+  "supported_architectures": ["arm64", "amd64"],
+  "created_at": 1733418000000,
+  "updated_at": 1733418000000
 }
