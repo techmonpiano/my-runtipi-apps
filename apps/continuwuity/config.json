@@ -67,6 +67,12 @@
     },
     {
       "type": "random",
+      "label": "Registration Token",
+      "env_variable": "REGISTRATION_TOKEN",
+      "min": 16
+    },
+    {
+      "type": "random",
       "label": "TURN Secret",
       "env_variable": "TURN_SECRET",
       "min": 32
