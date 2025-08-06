@@ -3,7 +3,10 @@ services:
     image: registry.gitlab.com/continuwuity/continuwuity:latest
     restart: unless-stopped
     networks:
+      continuwuity_network:
+        gw_priority: 0
       tipi_main_network:
+        gw_priority: 1
     environment:
       CONDUIT_SERVER_NAME: ${APP_DOMAIN}
       CONDUIT_DATABASE_PATH: /var/lib/matrix-conduit/
@@ -59,7 +62,10 @@ services:
     image: nginx
     restart: unless-stopped
     networks:
+      continuwuity_network:
+        gw_priority: 0
       tipi_main_network:
+        gw_priority: 1
     environment:
       APP_DOMAIN: ${APP_DOMAIN}
     volumes:
@@ -92,16 +98,20 @@ services:
     image: livekit/livekit-server:v1.7.2
     restart: unless-stopped
     networks:
+      continuwuity_network:
+        gw_priority: 0
       tipi_main_network:
+        gw_priority: 1
     ports:
-      - "7880:7880/tcp"
-      - "7881:7881/tcp"
-      - "7882:7882/udp"
-      - "50000-50200:50000-50200/udp"
+      - "7880:7880"  # HTTP
+      - "7881:7881"  # HTTPS
+      - "7882:7882/udp"  # TURN/UDP
+      - "50000-50200:50000-50200/udp"  # WebRTC UDP range
+    command: --config /livekit.yaml --bind 0.0.0.0
     environment:
-      LIVEKIT_CONFIG: /etc/livekit.yaml
+      LIVEKIT_DOMAIN: ${APP_DOMAIN}
     volumes:
-      - ./livekit.yaml:/etc/livekit.yaml:ro
+      - ./livekit.yaml:/livekit.yaml:ro
     labels:
       runtipi.managed: true
       traefik.enable: ${APP_EXPOSED}
@@ -124,11 +134,15 @@ services:
     image: ghcr.io/element-hq/lk-jwt-service:latest
     restart: unless-stopped
     networks:
+      continuwuity_network:
+        gw_priority: 0
       tipi_main_network:
+        gw_priority: 1
     environment:
-      LIVEKIT_URL: wss://${APP_DOMAIN}/livekit
-      LIVEKIT_KEY: ${LIVEKIT_API_KEY}
-      LIVEKIT_SECRET: ${LIVEKIT_API_SECRET}
+      - LIVEKIT_URL=wss://${APP_DOMAIN}/livekit
+      - LIVEKIT_KEY=${LIVEKIT_API_KEY}
+      - LIVEKIT_SECRET=${LIVEKIT_API_SECRET}
+      - MATRIX_SERVER_NAME=${APP_DOMAIN}
     labels:
       runtipi.managed: true
       traefik.enable: ${APP_EXPOSED}
@@ -146,24 +160,44 @@ services:
       traefik.http.routers.${APP_ID}-livekit-jwt.middlewares: ${APP_ID}-livekit-jwt-stripprefix@docker
       traefik.http.routers.${APP_ID}-livekit-jwt.priority: 75
 
-  # Coturn TURN server for WebRTC relay
+  # Coturn TURN server for WebRTC relay - Security Hardened
   coturn:
     image: coturn/coturn:4.6.2-r8
     restart: unless-stopped
-    networks:
-      tipi_main_network:
-    ports:
-      - "3478:3478/tcp"
-      - "3478:3478/udp"
-      - "5349:5349/tcp"
-      - "5349:5349/udp"
-      - "49160-49200:49160-49200/udp"
-    volumes:
-      - ./coturn.conf:/etc/coturn/turnserver.conf:ro
+    network_mode: host
+    user: "65534:65534"  # Run as nobody:nobody for security
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+      - /var/run:noexec,nosuid,size=10m
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE  # Required for binding to privileged ports
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.5'
+    healthcheck:
+      test: ["CMD", "turnutils_peer", "-t", "3478", "-H", "127.0.0.1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     environment:
-      TURN_SECRET: ${TURN_SECRET}
-      APP_DOMAIN: ${APP_DOMAIN}
-      EXTERNAL_IP: ${EXTERNAL_IP}
+      - TURN_REALM=${APP_DOMAIN}
+      - TURN_SECRET=${TURN_SECRET}
+      - USER_QUOTA=${USER_QUOTA:-5}
+    volumes:
+      - ${APP_DATA_DIR}/coturn:/var/lib/coturn:rw
+      - ./coturn.conf:/etc/coturn/turnserver.conf:ro
+    command: turnserver -c /etc/coturn/turnserver.conf
     labels:
       runtipi.managed: true
 
@@ -192,4 +226,10 @@ services:
 
 networks:
   tipi_main_network:
+    name: runtipi_tipi_main_network
     external: true
+  continuwuity_network:
+    external: false
+    ipam:
+      config:
+        - subnet: 10.128.11.0/24

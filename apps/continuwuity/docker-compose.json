@@ -103,12 +103,13 @@
         { "hostPort": "50000-50200", "containerPort": "50000-50200", "protocol": "udp" }
       ],
       "environment": {
-        "LIVEKIT_CONFIG": "/etc/livekit.yaml"
+        "LIVEKIT_DOMAIN": "${APP_DOMAIN}"
       },
+      "command": ["--config", "/livekit.yaml", "--bind", "0.0.0.0"],
       "volumes": [
         {
           "hostPath": "./livekit.yaml",
-          "containerPath": "/etc/livekit.yaml",
+          "containerPath": "/livekit.yaml",
           "readOnly": true
         }
       ],
@@ -135,7 +136,8 @@
       "environment": {
         "LIVEKIT_URL": "wss://${APP_DOMAIN}/livekit",
         "LIVEKIT_KEY": "${LIVEKIT_API_KEY}",
-        "LIVEKIT_SECRET": "${LIVEKIT_API_SECRET}"
+        "LIVEKIT_SECRET": "${LIVEKIT_API_SECRET}",
+        "MATRIX_SERVER_NAME": "${APP_DOMAIN}"
       },
       "extraLabels": {
         "traefik.enable": "true",

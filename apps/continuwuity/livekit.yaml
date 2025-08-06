@@ -6,9 +6,10 @@ rtc:
   port_range_end: 50200
 
 keys:
-  ${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}
+  0d0444054b420bfe: ce9314b9e4be1062f53fe4d59a157584
 
 room:
   auto_create: true
   max_participants: 50
   empty_timeout: 300
+  departure_timeout: 20
