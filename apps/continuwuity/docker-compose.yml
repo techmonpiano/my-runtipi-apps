@@ -31,6 +31,9 @@ services:
       CONDUIT_TURN_SECRET: "${TURN_SECRET}"
       CONDUIT_TURN_USERNAME: ""
       CONDUIT_TURN_TTL: "86400"
+      # Database recovery options for troubleshooting
+      CONDUIT_DATABASE_RECOVERY_MODE: ${DATABASE_RECOVERY_MODE:-2}
+      CONDUIT_DATABASE_REPAIR: ${DATABASE_REPAIR_MODE:-false}
     volumes:
       - ${APP_DATA_DIR}/data:/var/lib/matrix-conduit/
     depends_on:
@@ -185,11 +188,11 @@ services:
           memory: 256M
           cpus: '0.5'
     healthcheck:
-      test: ["CMD", "turnutils_peer", "-t", "3478", "-H", "127.0.0.1"]
+      test: ["CMD-SHELL", "pidof turnserver || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 10s
     environment:
       - TURN_REALM=${APP_DOMAIN}
       - TURN_SECRET=${TURN_SECRET}
@@ -232,4 +235,4 @@ networks:
     external: false
     ipam:
       config:
-        - subnet: 10.128.11.0/24
+        - subnet: 10.128.10.0/24
